@@ -4,6 +4,8 @@ const app = express();
 const mongoose = require("mongoose");
 const account = require("./router/account");
 const admin = require("./router/admin");
+const cors = require('cors');
+
 
 require("dotenv").config();
 
@@ -14,6 +16,13 @@ app.use(
   })
 );
 app.use(bodyParser.json());
+
+const corsOptions ={
+    origin:'http://localhost:3000', 
+    credentials:true,            //access-control-allow-credentials:true
+    optionSuccessStatus:200
+}
+app.use(cors(corsOptions));
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
