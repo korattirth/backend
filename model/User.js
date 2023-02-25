@@ -39,10 +39,6 @@ const userSchema = new Schema({
     type: String,
     required: true,
   },
-  Department: {
-    type: String,
-    required: true,
-  },
   DOB: {
     type: Date,
     required: true,

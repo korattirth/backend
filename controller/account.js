@@ -1,9 +1,14 @@
-const { validationResult } = require("express-validator");
+const {
+  validationResult
+} = require("express-validator");
 const bcypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const User = require("../model/User");
-const { Roles } = require("../util/enum");
+const {
+  Roles
+} = require("../util/enum");
+const UserDto = require("../dto/UserDto");
 
 const transporter = nodemailer.createTransport({
   service: process.env.SERVICE,
@@ -26,7 +31,7 @@ const createData = (userEmail) => {
 };
 
 exports.signUp = (req, res, next) => {
-  req.body.UserRole = Roles.Customer;
+
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const error = new Error("Validation failed");
@@ -48,10 +53,9 @@ exports.signUp = (req, res, next) => {
         Zipcode: req.body.zipcode,
         City: req.body.city,
         State: req.body.state,
-        Department: req.body.department,
         DOB: req.body.dob,
         IsActive: false,
-        UserRole: req.body.UserRole,
+        UserRole: req.body.department,
       });
       return user.save();
     })
@@ -59,13 +63,6 @@ exports.signUp = (req, res, next) => {
       res.status(201).json({
         message: "User created!",
         userId: user._id,
-      });
-      const data = createData(user.Email);
-
-      transporter.sendMail(data, (error, body) => {
-        if (error) {
-          return res.json({ error: error.message });
-        }
       });
     })
     .catch((err) => {
@@ -83,12 +80,12 @@ exports.signIn = (req, res, next) => {
   let loadedUser;
 
   User.findOne({
-    email: email,
-  })
+      Email : email
+    })
     .then((user) => {
       if (!user) {
         const error = new Error("Invalid Credentials!!");
-        error.statusCode = 401;
+        error.statusCode = 400;
         throw error;
       }
       loadedUser = user;
@@ -98,22 +95,22 @@ exports.signIn = (req, res, next) => {
     .then((isEqual) => {
       if (!isEqual) {
         const error = new Error("Invalid Credentials!!");
-        error.statusCode = 401;
+        error.statusCode = 400;
         throw error;
       }
-      const token = jwt.sign(
-        {
+      const token = jwt.sign({
           email: loadedUser.email,
           userId: loadedUser._id.toString(),
         },
-        process.env.SECRET_KEY_JWT,
-        {
+        process.env.SECRET_KEY_JWT, {
           expiresIn: "2h",
         }
       );
+
       res.status(200).json({
         token: token,
         userId: loadedUser._id.toString(),
+        user: new UserDto(loadedUser)
       });
     })
     .catch((err) => {
@@ -123,3 +120,21 @@ exports.signIn = (req, res, next) => {
       next(err);
     });
 };
+
+exports.getCurrentUser = (req, res, next) => {
+
+  User.findById(req.userId).then(user => {
+    if (!user) {
+      const error = new Error("Invalid Credentials!!");
+      error.statusCode = 400;
+      throw error;
+    }
+    const userDto = new UserDto(user);
+    res.status(200).json(userDto)
+  }).catch(err => {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  })
+}

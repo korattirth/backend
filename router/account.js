@@ -1,8 +1,15 @@
 const express = require("express");
 const User = require("../model/User");
 
-const { body } = require("express-validator");
-const { signIn, signUp } = require("../controller/account");
+const {
+  body
+} = require("express-validator");
+const {
+  signIn,
+  signUp,
+  getCurrentUser
+} = require("../controller/account");
+const auth = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -11,18 +18,20 @@ router.post(
   "/sign-up",
   [
     body("email")
-      .isEmail()
-      .withMessage("Please enter a valid email")
-      .custom((value, { req }) => {
-        return User.findOne({
-          Email: value,
-        }).then((userDoc) => {
-          if (userDoc) {
-            return Promise.reject("E-mail already exists!!");
-          }
-        });
-      })
-      .normalizeEmail(),
+    .isEmail()
+    .withMessage("Please enter a valid email")
+    .custom((value, {
+      req
+    }) => {
+      return User.findOne({
+        Email: value,
+      }).then((userDoc) => {
+        if (userDoc) {
+          return Promise.reject("E-mail already exists!!");
+        }
+      });
+    })
+    .normalizeEmail(),
     body("password").trim().isLength({
       min: 5,
     }),
@@ -36,15 +45,19 @@ router.post(
     body("department").trim().not().isEmpty(),
     body("dob").isDate(),
     body("confirmPassword")
-      .custom((value, { req }) => {
-        if (value !== req.body.password) {
-          throw new Error("Password has to be match!");
-        }
-        return true;
-      })
-      .trim(),
+    .custom((value, {
+      req
+    }) => {
+      if (value !== req.body.password) {
+        throw new Error("Password has to be match!");
+      }
+      return true;
+    })
+    .trim(),
   ],
   signUp
 );
+
+router.get('/current-user', auth, getCurrentUser)
 
 module.exports = router;

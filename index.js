@@ -4,7 +4,9 @@ const app = express();
 const mongoose = require("mongoose");
 const account = require("./router/account");
 const admin = require("./router/admin");
+const post = require("./router/post");
 const cors = require('cors');
+const multer = require("multer");
 
 
 require("dotenv").config();
@@ -38,8 +40,17 @@ app.use((req, res, next) => {
   next();
 });
 
+const fileStorage = multer.diskStorage({
+  filename: (req, file, cb) => {
+    cb(null,Math.random() + file.originalname);
+  },
+});
+
+app.use(multer({ storage: fileStorage}).single("file"));
+
 app.use("/account", account);
 app.use("/admin", admin);
+app.use("/user", post);
 
 app.use((error, req, res, next) => {
   const status = error.statusCode || 500;
