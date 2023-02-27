@@ -19,17 +19,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const createData = (userEmail) => {
-  const data = {
-    from: "yashvantdesai7@gmail.com",
-    to: userEmail,
-    subject: "About cancelled service request",
-    html: `
-          <h3>Hello.</h3>
-          `,
-  };
-  return data;
-};
 
 // Configuration 
 cloudinary.config({
@@ -103,6 +92,12 @@ exports.signIn = (req, res, next) => {
     .then((isEqual) => {
       if (!isEqual) {
         const error = new Error("Invalid Credentials!!");
+        error.statusCode = 400;
+        throw error;
+      }
+
+      if (loadedUser.IsActive === false) {
+        const error = new Error("You have to wait until Admin is not approve your account");
         error.statusCode = 400;
         throw error;
       }
@@ -206,22 +201,25 @@ exports.uploadUserImg = (req, res, next) => {
   }
   cloudinary.uploader.upload(image.path, (error, result) => {
     let loadedUser;
-    if (error) {
-      res.status(500).send('An error occurred while uploading the image');
-    } else {
-      User.findById(req.params.userId).then(user => {
+    try {
+      if (error) {
+        const error = new Error("An error occurred while uploading the image");
+        error.statusCode = 400;
+        throw error;
+      } else {
+        User.findById(req.params.userId).then(user => {
           loadedUser = user;
           user.Image = result.secure_url;
           return user.save();
         }).then(() => {
           res.status(200).json(loadedUser.Image)
         })
-        .catch(err => {
-          if (!err.statusCode) {
-            err.statusCode = 500;
-          }
-          next(err);
-        })
+      }
+    } catch (err) {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
     }
   })
 }

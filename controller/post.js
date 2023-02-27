@@ -27,28 +27,29 @@ exports.createPost = (req, res, next) => {
     }
 
     cloudinary.uploader.upload(image.path, (error, result) => {
-        if (error) {
-            res.status(500).send('An error occurred while uploading the image');
-        } else {
-            // Return the public URL of the uploaded image
-            const post = new Post({
-                Topic: topic,
-                Description: description,
-                Image: result.secure_url,
-                userId: req.userId
-            })
+        try {
+            if (error) {
+                res.status(500).send('An error occurred while uploading the image');
+            } else {
+                // Return the public URL of the uploaded image
+                const post = new Post({
+                    Topic: topic,
+                    Description: description,
+                    Image: result.secure_url,
+                    userId: req.userId
+                })
 
-            return post.save().then(() => {
-                res.status(200).json({
-                    message: 'Post created successfully'
-                });
-            }).catch(err => {
-                if (!err.statusCode) {
-                    err.statusCode = 500;
-                }
-                next(err);
-            })
-
+                return post.save().then(() => {
+                    res.status(200).json({
+                        message: 'Post created successfully'
+                    });
+                })
+            }
+        } catch (err) {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+            next(err);
         }
     });
 }

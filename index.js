@@ -22,7 +22,7 @@ app.use(bodyParser.json());
 const corsOptions ={
     origin:'http://localhost:3000', 
     credentials:true,            //access-control-allow-credentials:true
-    optionSuccessStatus:200
+    optionSuccessStatus:200,
 }
 app.use(cors(corsOptions));
 
@@ -37,6 +37,7 @@ app.use((req, res, next) => {
     "Access-Control-Allow-Headers",
     "Origin, X-Requested-With, Content-Type, Accept ,Authorization"
   );
+  res.setHeader('Access-Control-Expose-Headers','www-authenticate')
   next();
 });
 

@@ -36,7 +36,7 @@ router.post(
     .normalizeEmail(),
     body("password").trim().isLength({
       min: 5,
-    }),
+    }).withMessage('Password must be 5 character long'),
     body("fName").trim().not().isEmpty(),
     body("lName").trim().not().isEmpty(),
     body("homeAddress").trim().not().isEmpty(),

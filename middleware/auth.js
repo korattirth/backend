@@ -11,16 +11,12 @@ module.exports = (req, res, next) => {
   let decodedToken;
   try {
     decodedToken = jwt.verify(token, process.env.SECRET_KEY_JWT);
+    req.userId = decodedToken.userId;
+    next();
   } catch (err) {
-    err.statusCode = 500;
-    err.message = "Session out!! Please Login again";
-    throw err;
-  }
-  if (!decodedToken) {
+    res.setHeader('www-authenticate', err);
     const error = new Error("Not authenticated.");
     error.statusCode = 401;
-    throw error;
+    next(error)
   }
-  req.userId = decodedToken.userId;
-  next();
 };
