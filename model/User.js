@@ -51,6 +51,10 @@ const userSchema = new Schema({
     type: Number,
     required: true,
   },
+  Image: {
+    type: String,
+    required: false,
+  },
 });
 
 module.exports = mongoose.model("User", userSchema);

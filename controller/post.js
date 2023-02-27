@@ -28,7 +28,6 @@ exports.createPost = (req, res, next) => {
 
     cloudinary.uploader.upload(image.path, (error, result) => {
         if (error) {
-            console.log(error);
             res.status(500).send('An error occurred while uploading the image');
         } else {
             // Return the public URL of the uploaded image
@@ -69,6 +68,4 @@ exports.getAllPost = (req, res, next) => {
             res.json(postsDto)
         })
     })
-
-
 }

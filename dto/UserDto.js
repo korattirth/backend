@@ -12,6 +12,7 @@ class UserDto {
         this.dob = user.DOB;
         this.role = user.UserRole;
         this.isActive = user.IsActive;
+        this.image = user.Image
     }
 }
 

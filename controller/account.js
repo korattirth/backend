@@ -9,6 +9,7 @@ const {
   Roles
 } = require("../util/enum");
 const UserDto = require("../dto/UserDto");
+const cloudinary = require('cloudinary').v2;
 
 const transporter = nodemailer.createTransport({
   service: process.env.SERVICE,
@@ -29,6 +30,13 @@ const createData = (userEmail) => {
   };
   return data;
 };
+
+// Configuration 
+cloudinary.config({
+  cloud_name: "dflz4gt7i",
+  api_key: "762262536931417",
+  api_secret: "62fhXp0fDeKZdxtp1lopqaODm3k"
+});
 
 exports.signUp = (req, res, next) => {
 
@@ -80,7 +88,7 @@ exports.signIn = (req, res, next) => {
   let loadedUser;
 
   User.findOne({
-      Email : email
+      Email: email
     })
     .then((user) => {
       if (!user) {
@@ -136,5 +144,84 @@ exports.getCurrentUser = (req, res, next) => {
       err.statusCode = 500;
     }
     next(err);
+  })
+}
+
+exports.editUser = (req, res, next) => {
+  let userDto;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const error = new Error("Validation failed");
+    error.statusCode = 422;
+    error.data = errors.array();
+    throw error;
+  }
+  User.findById(req.params.userId).then(user => {
+      if (!user) {
+        const error = new Error("Invalid Credentials!!");
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const {
+        fName,
+        lName,
+        dob,
+        zipcode,
+        city,
+        state,
+        homeAddress,
+        address2
+      } = req.body;
+      user.update({
+        FName: fName,
+        LName: lName,
+        DOB: dob,
+        Zipcode: zipcode,
+        City: city,
+        State: state,
+        HomeAddress: homeAddress,
+        Address2: address2
+      }).then(() => {
+        User.findById(req.params.userId).then(user => {
+          userDto = new UserDto(user);
+          res.status(200).json(userDto)
+        })
+      })
+    })
+    .catch(err => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    })
+}
+
+exports.uploadUserImg = (req, res, next) => {
+  const image = req.file;
+  if (!image) {
+    const error = new Error("Validation failed");
+    error.statusCode = 422;
+    throw error;
+  }
+  cloudinary.uploader.upload(image.path, (error, result) => {
+    let loadedUser;
+    if (error) {
+      res.status(500).send('An error occurred while uploading the image');
+    } else {
+      User.findById(req.params.userId).then(user => {
+          loadedUser = user;
+          user.Image = result.secure_url;
+          return user.save();
+        }).then(() => {
+          res.status(200).json(loadedUser.Image)
+        })
+        .catch(err => {
+          if (!err.statusCode) {
+            err.statusCode = 500;
+          }
+          next(err);
+        })
+    }
   })
 }

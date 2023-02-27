@@ -2,12 +2,14 @@ const express = require("express");
 const User = require("../model/User");
 
 const {
-  body
+  body, validationResult
 } = require("express-validator");
 const {
   signIn,
   signUp,
-  getCurrentUser
+  getCurrentUser,
+  editUser,
+  uploadUserImg
 } = require("../controller/account");
 const auth = require("../middleware/auth");
 
@@ -58,6 +60,18 @@ router.post(
   signUp
 );
 
-router.get('/current-user', auth, getCurrentUser)
+router.get('/current-user', auth, getCurrentUser);
+router.post('/edit-user/:userId', [
+    body("fName").trim().not().isEmpty(),
+    body("lName").trim().not().isEmpty(),
+    body("homeAddress").trim().not().isEmpty(),
+    body("address2").trim().not().isEmpty(),
+    body("zipcode").trim().not().isEmpty(),
+    body("city").trim().not().isEmpty(),
+    body("state").trim().not().isEmpty(),
+    body("dob").isDate(),
+], auth, editUser);
+
+router.post('/upload-image/:userId',auth,uploadUserImg)
 
 module.exports = router;
