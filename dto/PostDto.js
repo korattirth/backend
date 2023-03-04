@@ -1,11 +1,11 @@
 class PostDto {
     constructor(post, user) {
-        this.fName = user.FName;
-        this.lName = user.LName;
-        this.topic = post.Topic;
-        this.description = post.Description;
-        this.image = post.Image;
-        this.role = user.UserRole;
+        this.fName = user.fName;
+        this.lName = user.lName;
+        this.topic = post.topic;
+        this.description = post.description;
+        this.image = post.image;
+        this.role = user.role;
     }
 }
 

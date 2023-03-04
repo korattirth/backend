@@ -12,6 +12,7 @@ const {
   uploadUserImg
 } = require("../controller/account");
 const auth = require("../middleware/auth");
+const upload = require('../util/uploader')
 
 const router = express.Router();
 
@@ -26,7 +27,7 @@ router.post(
       req
     }) => {
       return User.findOne({
-        Email: value,
+        email: value,
       }).then((userDoc) => {
         if (userDoc) {
           return Promise.reject("E-mail already exists!!");
@@ -72,6 +73,6 @@ router.post('/edit-user/:userId', [
     body("dob").isDate(),
 ], auth, editUser);
 
-router.post('/upload-image/:userId',auth,uploadUserImg)
+router.post('/upload-image/:userId',upload.single('file'),auth,uploadUserImg)
 
 module.exports = router;

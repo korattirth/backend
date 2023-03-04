@@ -5,7 +5,7 @@ const {
 
 module.exports = (req, res, next) => {
     req.userId && User.findById(req.userId).then(user => {
-        if (user && user.UserRole == Roles.Admin) {
+        if (user && user.role == Roles.Admin) {
             next();
         } else {
             const error = new Error("User does Not Authorized");

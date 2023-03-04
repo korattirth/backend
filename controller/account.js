@@ -5,11 +5,10 @@ const bcypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const User = require("../model/User");
-const {
-  Roles
-} = require("../util/enum");
 const UserDto = require("../dto/UserDto");
-const cloudinary = require('cloudinary').v2;
+const {
+  uploadToCloudinary
+} = require('../util/imageUpload')
 
 const transporter = nodemailer.createTransport({
   service: process.env.SERVICE,
@@ -19,114 +18,92 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-
-// Configuration 
-cloudinary.config({
-  cloud_name: "dflz4gt7i",
-  api_key: "762262536931417",
-  api_secret: "62fhXp0fDeKZdxtp1lopqaODm3k"
-});
-
-exports.signUp = (req, res, next) => {
-
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    const error = new Error("Validation failed");
-    error.statusCode = 422;
-    error.data = errors.array();
-    throw error;
+exports.signUp = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      const error = new Error("Validation failed");
+      error.statusCode = 422;
+      error.data = errors.array();
+      throw error;
+    }
+    const hashedPw = await bcypt.hash(req.body.password, 12);
+    const user = new User({
+      fName: req.body.fName,
+      lName: req.body.lName,
+      email: req.body.email,
+      password: hashedPw,
+      homeAddress: req.body.homeAddress,
+      address2: req.body.address2,
+      zipcode: req.body.zipcode,
+      city: req.body.city,
+      state: req.body.state,
+      dob: req.body.dob,
+      isActive: false,
+      role: req.body.department,
+    });
+    await user.save();
+    res.status(201).json({
+      message: "User created!",
+      userId: user._id,
+    });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
   }
-
-  bcypt
-    .hash(req.body.password, 12)
-    .then((hashedPw) => {
-      const user = new User({
-        FName: req.body.fName,
-        LName: req.body.lName,
-        Email: req.body.email,
-        Password: hashedPw,
-        HomeAddress: req.body.homeAddress,
-        Address2: req.body.address2,
-        Zipcode: req.body.zipcode,
-        City: req.body.city,
-        State: req.body.state,
-        DOB: req.body.dob,
-        IsActive: false,
-        UserRole: req.body.department,
-      });
-      return user.save();
-    })
-    .then((user) => {
-      res.status(201).json({
-        message: "User created!",
-        userId: user._id,
-      });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
-    });
 };
 
-exports.signIn = (req, res, next) => {
-  const email = req.body.email;
-  const password = req.body.password;
+exports.signIn = async (req, res, next) => {
+  try {
+    const email = req.body.email;
+    const password = req.body.password;
 
-  let loadedUser;
-
-  User.findOne({
-      Email: email
+    const user = await User.findOne({
+      email: email
     })
-    .then((user) => {
-      if (!user) {
-        const error = new Error("Invalid Credentials!!");
-        error.statusCode = 400;
-        throw error;
+    if (!user) {
+      const error = new Error("Invalid Credentials!!");
+      error.statusCode = 400;
+      throw error;
+    }
+    const isEqual = await bcypt.compare(password, user.password);
+    if (!isEqual) {
+      const error = new Error("Invalid Credentials!!");
+      error.statusCode = 400;
+      throw error;
+    }
+    if (user.isActive === false) {
+      const error = new Error("You have to wait until Admin is not approve your account");
+      error.statusCode = 400;
+      throw error;
+    }
+    const token = jwt.sign({
+        email: user.email,
+        userId: user._id.toString(),
+      },
+      process.env.SECRET_KEY_JWT, {
+        expiresIn: "2h",
       }
-      loadedUser = user;
-
-      return bcypt.compare(password, user.Password);
-    })
-    .then((isEqual) => {
-      if (!isEqual) {
-        const error = new Error("Invalid Credentials!!");
-        error.statusCode = 400;
-        throw error;
-      }
-
-      if (loadedUser.IsActive === false) {
-        const error = new Error("You have to wait until Admin is not approve your account");
-        error.statusCode = 400;
-        throw error;
-      }
-      const token = jwt.sign({
-          email: loadedUser.email,
-          userId: loadedUser._id.toString(),
-        },
-        process.env.SECRET_KEY_JWT, {
-          expiresIn: "2h",
-        }
-      );
-
-      res.status(200).json({
-        token: token,
-        userId: loadedUser._id.toString(),
-        user: new UserDto(loadedUser)
-      });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
+    );
+    res.status(200).json({
+      token: token,
+      userId: user._id.toString(),
+      user: new UserDto(user)
     });
+
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 };
 
-exports.getCurrentUser = (req, res, next) => {
-
-  User.findById(req.userId).then(user => {
+exports.getCurrentUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
     if (!user) {
       const error = new Error("Invalid Credentials!!");
       error.statusCode = 400;
@@ -134,92 +111,82 @@ exports.getCurrentUser = (req, res, next) => {
     }
     const userDto = new UserDto(user);
     res.status(200).json(userDto)
-  }).catch(err => {
+
+  } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
     }
     next(err);
-  })
+  }
 }
 
-exports.editUser = (req, res, next) => {
-  let userDto;
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    const error = new Error("Validation failed");
-    error.statusCode = 422;
-    error.data = errors.array();
-    throw error;
-  }
-  User.findById(req.params.userId).then(user => {
-      if (!user) {
-        const error = new Error("Invalid Credentials!!");
-        error.statusCode = 400;
-        throw error;
-      }
-
-      const {
-        fName,
-        lName,
-        dob,
-        zipcode,
-        city,
-        state,
-        homeAddress,
-        address2
-      } = req.body;
-      user.update({
-        FName: fName,
-        LName: lName,
-        DOB: dob,
-        Zipcode: zipcode,
-        City: city,
-        State: state,
-        HomeAddress: homeAddress,
-        Address2: address2
-      }).then(() => {
-        User.findById(req.params.userId).then(user => {
-          userDto = new UserDto(user);
-          res.status(200).json(userDto)
-        })
-      })
-    })
-    .catch(err => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
-    })
-}
-
-exports.uploadUserImg = (req, res, next) => {
-  const image = req.file;
-  if (!image) {
-    const error = new Error("Validation failed");
-    error.statusCode = 422;
-    throw error;
-  }
-  cloudinary.uploader.upload(image.path, (error, result) => {
-    let loadedUser;
-    try {
-      if (error) {
-        const error = new Error("An error occurred while uploading the image");
-        error.statusCode = 400;
-        throw error;
-      } else {
-        User.findById(req.params.userId).then(user => {
-          loadedUser = user;
-          user.Image = result.secure_url;
-          return user.save();
-        }).then(() => {
-          res.status(200).json(loadedUser.Image)
-        })
-      }
-    } catch (err) {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
+exports.editUser = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      const error = new Error("Validation failed");
+      error.statusCode = 422;
+      error.data = errors.array();
+      throw error;
     }
-  })
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      const error = new Error("Invalid Credentials!!");
+      error.statusCode = 400;
+      throw error;
+    }
+    const {
+      fName,
+      lName,
+      dob,
+      zipcode,
+      city,
+      state,
+      homeAddress,
+      address2
+    } = req.body;
+    await user.update({
+      fName: fName,
+      lName: lName,
+      dOB: dob,
+      zipcode: zipcode,
+      city: city,
+      state: state,
+      homeAddress: homeAddress,
+      address2: address2
+    })
+    const editUser = await User.findById(req.params.userId);
+    res.status(200).json(new UserDto(editUser))
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+}
+
+exports.uploadUserImg = async (req, res, next) => {
+  try {
+    const image = req.file;
+    if (!image) {
+      const error = new Error("Validation failed");
+      error.statusCode = 422;
+      throw error;
+    }
+    let imagePath = await uploadToCloudinary(image.path);
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      const error = new Error("Invalid Credentials!!");
+      error.statusCode = 400;
+      throw error;
+    }
+    user.image = imagePath.secure_url;
+    await user.save();
+    res.status(200).json(user.image)
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 }

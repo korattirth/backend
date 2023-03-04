@@ -2,56 +2,56 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const userSchema = new Schema({
-  FName: {
+  fName: {
     type: String,
     required: true,
   },
-  LName: {
+  lName: {
     type: String,
     required: true,
   },
-  Email: {
+  email: {
     type: String,
     required: true,
   },
-  Password: {
+  password: {
     type: String,
     required: true,
   },
-  HomeAddress: {
+  homeAddress: {
     type: String,
     required: true,
   },
-  Address2: {
+  address2: {
     type: String,
     required: true,
   },
-  Zipcode: {
+  zipcode: {
     type: Number,
     required: true,
   },
 
-  City: {
+  city: {
     type: String,
     required: true,
   },
-  State: {
+  state: {
     type: String,
     required: true,
   },
-  DOB: {
+  dob: {
     type: Date,
     required: true,
   },
-  IsActive: {
+  isActive: {
     type: Boolean,
     required: true,
   },
-  UserRole: {
+  role: {
     type: Number,
     required: true,
   },
-  Image: {
+  image: {
     type: String,
     required: false,
   },
