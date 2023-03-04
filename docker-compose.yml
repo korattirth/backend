@@ -1,0 +1,20 @@
+services:
+  node:
+    image: ts
+    container_name: node
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    ports:
+      - 8000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.node.rule=Host(`ts.devbastion.tk`)"
+      - "traefik.http.services.node.loadbalancer.server.port=8000"
+      - "traefik.http.routers.node.tls.certresolver=lets-encrypt"
+      - "traefik.http.routers.node.tls=true"
+
+
+networks:
+  traefik-net:
+    external: true
