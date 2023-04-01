@@ -9,7 +9,9 @@ const {
   signUp,
   getCurrentUser,
   editUser,
-  uploadUserImg
+  uploadUserImg,
+  postOrder,
+  getMyOrders
 } = require("../controller/account");
 const auth = require("../middleware/auth");
 const upload = require('../util/uploader')
@@ -74,5 +76,7 @@ router.post('/edit-user/:userId', [
 ], auth, editUser);
 
 router.post('/upload-image/:userId',upload.single('file'),auth,uploadUserImg)
+router.post('/post-order',auth,postOrder)
+router.get('/my-orders',auth,getMyOrders)
 
 module.exports = router;

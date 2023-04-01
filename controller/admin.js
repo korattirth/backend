@@ -3,6 +3,16 @@ const {
   Roles
 } = require("../util/enum");
 const UserDto = require("../dto/UserDto");
+const nodemailer = require("nodemailer");
+require("dotenv").config();
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_FROM,
+    pass: process.env.PASSWORD,
+  },
+});
 
 exports.userList = async (req, res, next) => {
   try {
@@ -38,6 +48,13 @@ exports.editActiveStatus = async (req, res, next) => {
     }
     user.isActive = !user.isActive;
     await user.save();
+    var mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to: user.email,
+      subject: `${user.isActive ? "Activate successfully!!" : "Deactive Account"}`,
+      html: `<h3>Your account has been ${user.isActive ? "activated" : "deactivated"}.</h3><p>Now You ${user.isActive ? "can" : "can't"} login into your account</p>`
+    };
+    transporter.sendMail(mailOptions);
     res.status(200).json({
       message: 'Status change successfully'
     });

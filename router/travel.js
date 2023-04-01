@@ -4,6 +4,7 @@ const {
 } = require("express-validator");
 const upload = require('../util/uploader');
 const auth = require("../middleware/auth");
+const isAdmin = require("../middleware/isAdmin");
 
 const {
     createPost,getPostList, getSinglePost
@@ -15,7 +16,7 @@ router.post("/create-post", upload.array('file', 5), [
     body('topic').trim().not().isEmpty(),
     body('description').trim().not().isEmpty(),
     body("date").isDate().not().isEmpty(),
-],auth, createPost);
+],auth,isAdmin, createPost);
 
 router.get("/travel-post-list",getPostList)
 router.get("/travel-post/:postId",getSinglePost)

@@ -5,18 +5,25 @@ const bcypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const User = require("../model/User");
+const Oreders = require("../model/Orders");
 const UserDto = require("../dto/UserDto");
 const {
   uploadToCloudinary
-} = require('../util/imageUpload')
+} = require('../util/imageUpload');
+const Orders = require("../model/Orders");
+require("dotenv").config();
+// const {
+//   transporter
+// } = require('../util/mail');
 
 const transporter = nodemailer.createTransport({
-  service: process.env.SERVICE,
+  service: "gmail",
   auth: {
-    user: process.env.USER,
-    pass: process.env.PASS,
+    user: process.env.EMAIL_FROM,
+    pass: process.env.PASSWORD,
   },
 });
+
 
 exports.signUp = async (req, res, next) => {
   try {
@@ -43,6 +50,13 @@ exports.signUp = async (req, res, next) => {
       role: req.body.department,
     });
     await user.save();
+    var mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to: user.email,
+      subject: 'Signup successfully!!',
+      html: "<h3>Welcome to TS High School</h3><p>Your account is under observation so wait until it's active</p>"
+    };
+    transporter.sendMail(mailOptions);
     res.status(201).json({
       message: "User created!",
       userId: user._id,
@@ -62,6 +76,9 @@ exports.signIn = async (req, res, next) => {
 
     const user = await User.findOne({
       email: email
+    }).populate({
+      path: "cart.events.eventId",
+      select: '_id topic image date price'
     })
     if (!user) {
       const error = new Error("Invalid Credentials!!");
@@ -103,7 +120,10 @@ exports.signIn = async (req, res, next) => {
 
 exports.getCurrentUser = async (req, res, next) => {
   try {
-    const user = await User.findById(req.userId);
+    const user = await User.findById(req.userId).populate({
+      path: "cart.events.eventId",
+      select: '_id topic image date price'
+    });
     if (!user) {
       const error = new Error("Invalid Credentials!!");
       error.statusCode = 400;
@@ -183,6 +203,41 @@ exports.uploadUserImg = async (req, res, next) => {
     user.image = imagePath.secure_url;
     await user.save();
     res.status(200).json(user.image)
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+}
+
+exports.postOrder = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    const orders = new Oreders();
+    orders.userId = user._id;
+    user.cart.events.map((event) => {
+      orders.events.push(event)
+    })
+    user.cart = [];
+    await user.save();
+    await orders.save();
+    res.status(200).json({ message: "Order success" });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+}
+
+exports.getMyOrders = async(req, res, next) => {
+  try {
+    const orders = await Orders.find({ userId: req.userId }).populate({
+      path: 'eventId',
+      select : '_id topic image date type price'
+    });
+    res.status(200).send(orders)
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;

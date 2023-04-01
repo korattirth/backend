@@ -12,7 +12,8 @@ class UserDto {
         this.dob = user.dob;
         this.role = user.role;
         this.isActive = user.isActive;
-        this.image = user.image
+        this.image = user.image;
+        this.cart = user.cart;
     }
 }
 

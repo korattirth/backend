@@ -55,6 +55,57 @@ const userSchema = new Schema({
     type: String,
     required: false,
   },
+  cart: {
+    events: [{
+      eventId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Event',
+        required: true
+      },
+      quantity: {
+        type: Number,
+        required: true
+      }
+    }]
+  }
 });
+
+userSchema.methods.addToCart = function(event){
+  const cartEventIndex = this.cart.events.findIndex(ev => {
+      return ev.eventId.toString() === event._id.toString();
+  });
+
+  let newQuantity = 1;
+  const updatedCartItems = [...this.cart.events]
+  if(cartEventIndex >= 0){
+      newQuantity = this.cart.events[cartEventIndex].quantity + 1;
+      updatedCartItems[cartEventIndex].quantity = newQuantity;
+  }
+  else{
+      updatedCartItems.push({
+          eventId : event._id,
+          quantity : newQuantity
+      });
+  }
+  const updatedCart = {
+      events : updatedCartItems
+  }
+  this.cart = updatedCart;
+  return this.save();
+}
+
+userSchema.methods.removeFromCart = function(eventId) {
+  const updateCartItem = this.cart.events.filter(event => {
+      return event.eventId.toString() !== eventId.toString();
+  })
+
+  this.cart.events = updateCartItem;
+  return this.save();
+}
+
+userSchema.methods.clearCart = function(){
+  this.cart = {events : []}
+  return this.save();
+}
 
 module.exports = mongoose.model("User", userSchema);
