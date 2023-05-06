@@ -7,6 +7,7 @@ const admin = require("./router/admin");
 const post = require("./router/post");
 const travel = require("./router/travel");
 const event = require("./router/event");
+const contact = require("./router/contact");
 const cors = require('cors');
 
 
@@ -55,6 +56,7 @@ app.use("/admin", admin);
 app.use("/user", post);
 app.use("/travel", travel);
 app.use("/event", event);
+app.use("/contact", contact);
 
 app.use((error, req, res, next) => {
   const status = error.statusCode || 500;

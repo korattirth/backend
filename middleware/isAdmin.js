@@ -10,7 +10,7 @@ module.exports = (req, res, next) => {
         } else {
             const error = new Error("User does Not Authorized");
             error.statusCode = 401;
-            throw error;
+            next(error)
         }
     })
 }

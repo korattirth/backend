@@ -99,6 +99,8 @@ userSchema.methods.removeFromCart = function(eventId) {
       return event.eventId.toString() !== eventId.toString();
   })
 
+  console.log(updateCartItem)
+
   this.cart.events = updateCartItem;
   return this.save();
 }

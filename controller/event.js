@@ -131,7 +131,7 @@ exports.removeToCartEvent = async (req, res, next) => {
         const eventId = req.params.eventId;
         const event = await Event.findById(eventId);
         const user = await User.findById(req.userId);
-        await user.removeFromCart(event);
+        await user.removeFromCart(event._id);
         res.status(200).json({
             message: "Remove Event To Cart Successfully!!"
         })
