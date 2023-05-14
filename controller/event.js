@@ -173,8 +173,8 @@ exports.makePayment = async (req, res, next) => {
             customer: customer.id,
             payment_method_types: ['card'],
             mode: 'payment',
-            success_url: `http://localhost:3000/orders`,
-            cancel_url: `http://localhost:3000/my-cart`,
+            success_url: `${process.env.BASE_URL}orders`,
+            cancel_url: `${process.env.BASE_URL}my-cart`,
         });
         res.send({
             url: session.url
